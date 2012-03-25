@@ -6,10 +6,6 @@
       CalApp.Router = new CalApp.AppRouter();
       Backbone.history.start();
 
-      $('#calendar-picker-wrap').click(function () {
-        $('#calendar-picker').trigger('click');
-      });
-
       CalApp.Helpers.resize();
 
       $(window).resize(function () {
@@ -18,8 +14,26 @@
     },
 
     API_KEY:'AIzaSyA1y3uKOlHCBg9oQmUO1XYTjBZ9M37UIu8',
-    POLLING_INTERVAL:1000 * 60 * 10
+    POLLING_INTERVAL:1000 * 60 * 10,
+
+    events:{
+      loggedIn:'createHeaderAndCurrentTime',
+      renderMeetings:'createMeetings'
+    },
+
+    createHeaderAndCurrentTime:function (context) {
+      this.header = new this.Views.HeaderView();
+      this.currentTime = new this.Views.CurrentTime();
+    },
+
+    createMeetings:function () {
+      this.Helpers.save_state(this.el);
+      this.meetings = new CalApp.Views.MeetingView();
+    }
   };
+
+  // AWFUL //
+  _.extend(CalApp, Backbone.Events);
 
   CalApp.Helpers = {
     resize:function () {
@@ -41,10 +55,10 @@
   CalApp.AppRouter = Backbone.Router.extend({
     routes:{
       'login':'login',
-      '*catchAll':'rerouter'
+      '*catchAll':'router'
     },
 
-    rerouter:function () {
+    router:function () {
       if (window.location.hash.length > 0) {
         sessionStorage.setItem('accessToken', this._parseQuery().access_token.toString());
         CalApp.Router.navigate('', {trigger:true});
@@ -63,8 +77,10 @@
           },
 
           success:function () {
-            new CalApp.Views.HeaderView();
-//          new CalApp.Views.CurrentTime();
+            console.log('triggeringLoggedIn')
+            CalApp.trigger('loggedIn')
+//            new CalApp.Views.HeaderView();
+//            new CalApp.Views.CurrentTime();
           }
         });
 
@@ -194,10 +210,6 @@
     Calendars:Backbone.Collection.extend({
       model:CalApp.Models.Calendar,
 
-      events:{
-
-      },
-
       url:function () {
         var baseUrl = 'https://www.googleapis.com/calendar/v3/users/me/calendarList?',
           data = {
@@ -264,7 +276,8 @@
     CalendarsSelectView:Backbone.View.extend({
       el:'#calendar-picker',
       events:{
-        'change':'renderMeetings'
+        '#calendar-picker-wrap click':'openCalendarPicker',
+        'change':'calendarSelected'
       },
       initialize:function () {
         var that = this;
@@ -296,9 +309,12 @@
         return this;
       },
 
-      renderMeetings:function (calendar) {
-        CalApp.Helpers.save_state(this.el);
-        CalApp.meetings = new CalApp.Views.MeetingView();
+      calendarSelected:function () {
+        CalApp.trigger('renderMeetings')
+      },
+
+      openCalendarPicker:function () {
+        $(this.el).trigger('click');
       }
     }),
 
