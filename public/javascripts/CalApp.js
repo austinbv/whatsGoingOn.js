@@ -14,26 +14,8 @@
     },
 
     API_KEY:'AIzaSyA1y3uKOlHCBg9oQmUO1XYTjBZ9M37UIu8',
-    POLLING_INTERVAL:1000 * 60 * 10,
-
-    events:{
-      loggedIn:'createHeaderAndCurrentTime',
-      renderMeetings:'createMeetings'
-    },
-
-    createHeaderAndCurrentTime:function (context) {
-      this.header = new this.Views.HeaderView();
-      this.currentTime = new this.Views.CurrentTime();
-    },
-
-    createMeetings:function () {
-      this.Helpers.save_state(this.el);
-      this.meetings = new CalApp.Views.MeetingView();
-    }
+    POLLING_INTERVAL:1000 * 60 * 10
   };
-
-  // AWFUL //
-  _.extend(CalApp, Backbone.Events);
 
   CalApp.Helpers = {
     resize:function () {
@@ -48,7 +30,7 @@
     save_state_and_login:function (element) {
       var $element = $(element);
       CalApp.Helpers.save_state(element);
-//    CalApp.Router.navigate('login', {trigger:true});
+      CalApp.Router.navigate('login', {trigger:true});
     }
   };
 
@@ -77,10 +59,8 @@
           },
 
           success:function () {
-            console.log('triggeringLoggedIn')
-            CalApp.trigger('loggedIn')
-//            new CalApp.Views.HeaderView();
-//            new CalApp.Views.CurrentTime();
+            CalApp.header = new CalApp.Views.HeaderView();
+            CalApp.currentTime = new CalApp.Views.CurrentTime();
           }
         });
 
@@ -279,6 +259,7 @@
         '#calendar-picker-wrap click':'openCalendarPicker',
         'change':'calendarSelected'
       },
+
       initialize:function () {
         var that = this;
         this.collection = new CalApp.Collections.Calendars();
@@ -286,7 +267,7 @@
         this.collection.on('all', this.render, this);
         this.collection.fetch({
           success:function () {
-            $(that.el).trigger('change');
+            this.trigger('change');
           },
 
           error:function () {
@@ -295,7 +276,7 @@
         });
 
         $(window).resize(function () {
-          $(that.el).trigger('change');
+          this.trigger('change');
         });
       },
 
@@ -310,7 +291,8 @@
       },
 
       calendarSelected:function () {
-        CalApp.trigger('renderMeetings')
+        CalApp.Helpers.save_state(this.el);
+        CalApp.meetings = new CalApp.Views.MeetingView();
       },
 
       openCalendarPicker:function () {
@@ -395,6 +377,7 @@
 
       calculateOffset:function () {
         var secondsIntoTheDay = ((this.model.get('hour') - 8) * 60 * 60) + (this.model.get('minute') * 60) + (this.model.get('second'));
+//        var secondsIntoTheDay = ((8 - 8) * 60 * 60) + (20 * 60) + (30);
 
         var amountOfDayUsed = secondsIntoTheDay / (60 * 60 * 9);
         return $('#calendar').height() * amountOfDayUsed;
