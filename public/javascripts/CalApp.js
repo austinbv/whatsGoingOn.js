@@ -291,8 +291,7 @@
       },
 
       calendarSelected:function () {
-        console.log('called');
-        CalApp.Helpers.save_state(this.el);
+          CalApp.Helpers.save_state(this.el);
         CalApp.meetings = new CalApp.Views.MeetingView();
       },
 
